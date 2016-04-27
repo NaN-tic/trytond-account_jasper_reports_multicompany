@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!-- The COPYRIGHT file at the top level of this repository contains the full
+copyright notices and license terms. -->
+<tryton>
+    <data>
+        <record model="ir.ui.view" id="print_general_ledger_start_view_form">
+            <field name="model">account_jasper_reports_multicompany.print_general_ledger.start</field>
+            <field name="type">form</field>
+            <field name="name">print_general_ledger_start_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="print_general_ledger_company_view_form">
+            <field name="model">account_jasper_reports_multicompany.print_general_ledger.company</field>
+            <field name="type">form</field>
+            <field name="name">print_general_ledger_company_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="print_general_ledger_company_view_list">
+            <field name="model">account_jasper_reports_multicompany.print_general_ledger.company</field>
+            <field name="type">tree</field>
+            <field name="name">print_general_ledger_company_list</field>
+        </record>
+
+        <record model="ir.action.wizard" id="wizard_print_general_ledger">
+            <field name="name">Print General Ledger Multicompany</field>
+            <field name="wiz_name">account_jasper_reports_multicompany.print_general_ledger</field>
+        </record>
+        <record model="ir.action.report" id="report_general_ledger">
+            <field name="name">General Ledger</field>
+            <!--<field name="model">account.move.line</field>-->
+            <field name="report_name">account_jasper_reports_multicompany.general_ledger</field>
+            <field name="report">account_jasper_reports_multicompany/general_ledger.jrxml</field>
+            <field name="extension">pdf</field>
+        </record>
+        
+        <menuitem id="menu_print_general_ledger_multicompany"
+            action="wizard_print_general_ledger" icon="tryton-print"
+            parent="account.menu_reporting"/>
+    </data>
+</tryton>

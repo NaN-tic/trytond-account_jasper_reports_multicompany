@@ -1,0 +1,189 @@
+#
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.company,company:"
+msgid "Company"
+msgstr "Empresa"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.company,end_period:"
+msgid "End Period"
+msgstr "Període final"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.company,fiscalyear:"
+msgid "Fiscal Year"
+msgstr "Exercici fiscal"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.company,id:"
+msgid "ID"
+msgstr "Identificador"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.company,start:"
+msgid "Start"
+msgstr "Inici"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.company,start_period:"
+msgid "Start Period"
+msgstr "Període inicial"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.start,account_templates:"
+msgid "Accounts"
+msgstr "Comptes"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.start,companies:"
+msgid "Companies"
+msgstr "Empreses"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.start,id:"
+msgid "ID"
+msgstr "Identificador"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.start,output_format:"
+msgid "Output Format"
+msgstr "Tipus de fitxer"
+
+msgctxt ""
+"field:account_jasper_reports_multicompany.print_general_ledger.start,parties:"
+msgid "Parties"
+msgstr "Tercers"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid " From"
+msgstr " De"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Account Code"
+msgstr "Codi compte"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "All Accounts"
+msgstr "Tots els comptes"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "All Parties"
+msgstr "Tots els tercers"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Company"
+msgstr "Empresa"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Credit"
+msgstr "Haver"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Date"
+msgstr "Data"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Debit"
+msgstr "Deure"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Description"
+msgstr "Descripció"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Fiscal Year: "
+msgstr "Exercici fiscal: "
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "General Ledger Multicompany"
+msgstr "Informe de llibre major multiempresa"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Number"
+msgstr "Número"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Party"
+msgstr "Tercer"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Reference"
+msgstr "Referència"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "To"
+msgstr "Per a"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid "Total"
+msgstr "Total"
+
+msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgid ""
+"When the Move number is between '()' means it hasn't Post Number and the "
+"shown number is the provisional one."
+msgstr ""
+"Si el número d'assentament apareix entre parèntesis indica que no té número "
+"confirmat i el número que es mostra és el provisional."
+
+msgctxt ""
+"model:account_jasper_reports_multicompany.print_general_ledger.company,name:"
+msgid "Print General Ledger - Company"
+msgstr "Imprimeix llibre major - Empresa"
+
+msgctxt ""
+"model:account_jasper_reports_multicompany.print_general_ledger.start,name:"
+msgid "Print General Ledger"
+msgstr "Imprimeix llibre major"
+
+msgctxt "model:ir.action,name:report_general_ledger"
+msgid "General Ledger"
+msgstr "Llibre major"
+
+msgctxt "model:ir.action,name:wizard_print_general_ledger"
+msgid "Print General Ledger Multicompany"
+msgstr "Imprimeix llibre major multiempresa"
+
+msgctxt "model:ir.ui.menu,name:menu_print_general_ledger_multicompany"
+msgid "Print General Ledger Multicompany"
+msgstr "Imprimeix llibre major multiempresa"
+
+msgctxt ""
+"selection:account_jasper_reports_multicompany.print_general_ledger.start,output_format:"
+msgid "PDF"
+msgstr "PDF"
+
+msgctxt ""
+"selection:account_jasper_reports_multicompany.print_general_ledger.start,output_format:"
+msgid "XLS"
+msgstr "XLS"
+
+msgctxt ""
+"view:account_jasper_reports_multicompany.print_general_ledger.company:"
+msgid "General Ledger Report Company"
+msgstr "Empresa informe de llibre major"
+
+msgctxt "view:account_jasper_reports_multicompany.print_general_ledger.start:"
+msgid "General Ledger Report"
+msgstr "Informe de llibre major"
+
+msgctxt "view:account_jasper_reports_multicompany.print_general_ledger.start:"
+msgid "Left empty to select all accounts"
+msgstr "Deixeu-ho en blanc per seleccionar tots els comptes"
+
+msgctxt "view:account_jasper_reports_multicompany.print_general_ledger.start:"
+msgid "Left empty to select all parties"
+msgstr "Deixeu-ho en blanc per seleccionar tots els tercers"
+
+msgctxt ""
+"wizard_button:account_jasper_reports_multicompany.print_general_ledger,start,end:"
+msgid "Cancel"
+msgstr "Cancel·la"
+
+msgctxt ""
+"wizard_button:account_jasper_reports_multicompany.print_general_ledger,start,print_:"
+msgid "Print"
+msgstr "Imprimeix"

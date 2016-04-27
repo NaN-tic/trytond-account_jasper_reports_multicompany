@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!-- The COPYRIGHT file at the top level of this repository contains the full
+     copyright notices and license terms. -->
+<form string="General Ledger Report">
+    <field name="companies" colspan="4"/>
+    <label id="select_parties" string="Left empty to select all parties"/>
+    <field name="parties" colspan="4"/>
+    <label id="select_accounts" string="Left empty to select all accounts"/>
+    <field name="account_templates" colspan="4"/>
+    <label name="output_format"/>
+    <field name="output_format"/>
+</form>
