@@ -7,7 +7,6 @@ from .general_ledger import *
 def register():
     Pool.register(
         PrintGeneralLedgerStart,
-        PrintGeneralLedgerCompany,
         module='account_jasper_reports_multicompany', type_='model')
     Pool.register(
         PrintGeneralLedger,

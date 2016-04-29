@@ -2,6 +2,14 @@
 <!-- The COPYRIGHT file at the top level of this repository contains the full
      copyright notices and license terms. -->
 <form string="General Ledger Report">
+    <label name="company"/>
+    <field name="company"/>
+    <label name="fiscalyear"/>
+    <field name="fiscalyear"/>
+    <label name="start_period"/>
+    <field name="start_period"/>
+    <label name="end_period"/>
+    <field name="end_period"/>
     <field name="companies" colspan="4"/>
     <label id="select_parties" string="Left empty to select all parties"/>
     <field name="parties" colspan="4"/>

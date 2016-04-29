@@ -1,6 +1,8 @@
-# This file is part of account_jasper_reports for tryton.  The COPYRIGHT file
-# at the top level of this repository contains the full copyright notices and
-# license terms.
+# The COPYRIGHT file at the top level of this repository contains the full
+# copyright notices and license terms.
+from datetime import timedelta
+from decimal import Decimal
+
 from trytond.pool import Pool
 from trytond.transaction import Transaction
 from trytond.model import ModelView, fields
@@ -8,37 +10,14 @@ from trytond.wizard import Wizard, StateView, StateAction, Button
 from trytond.pyson import Eval
 from trytond.modules.jasper_reports.jasper import JasperReport
 
-__all__ = ['PrintGeneralLedgerStart', 'PrintGeneralLedgerCompany',
+__all__ = ['PrintGeneralLedgerStart',
     'PrintGeneralLedger', 'GeneralLedgerReport']
 
 
 class PrintGeneralLedgerStart(ModelView):
     'Print General Ledger'
     __name__ = 'account_jasper_reports_multicompany.print_general_ledger.start'
-    companies = fields.One2Many(
-        'account_jasper_reports_multicompany.print_general_ledger.company',
-        'start', 'Companies', required=True)
-    account_templates = fields.Many2Many('account.account.template', None,
-        None, 'Accounts')
-    parties = fields.Many2Many('party.party', None, None, 'Parties')
-    output_format = fields.Selection([
-            ('pdf', 'PDF'),
-            ('xls', 'XLS'),
-            ], 'Output Format', required=True)
-
-    @staticmethod
-    def default_output_format():
-        return 'pdf'
-
-
-class PrintGeneralLedgerCompany(ModelView):
-    'Print General Ledger - Company'
-    __name__ = (
-        'account_jasper_reports_multicompany.print_general_ledger.company')
-    start = fields.Many2One(
-        'account_jasper_reports_multicompany.print_general_ledger.start',
-        'Start', required=True)
-    company = fields.Many2One('company.company', 'Company', required=True)
+    company = fields.Many2One('company.company', 'Base Company', required=True)
     fiscalyear = fields.Many2One('account.fiscalyear', 'Fiscal Year',
         required=True,
         domain=[
@@ -57,6 +36,21 @@ class PrintGeneralLedgerCompany(ModelView):
             ('start_date', '>=', (Eval('start_period'), 'start_date'))
             ],
         depends=['fiscalyear', 'start_period'])
+    companies = fields.Many2Many('company.company', None, None,
+        'Other Companies', domain=[
+            ('id', '!=', Eval('company')),
+            ], depends=['company'])
+    account_templates = fields.Many2Many('account.account.template', None,
+        None, 'Accounts')
+    parties = fields.Many2Many('party.party', None, None, 'Parties')
+    output_format = fields.Selection([
+            ('pdf', 'PDF'),
+            ('xls', 'XLS'),
+            ], 'Output Format', required=True)
+
+    @staticmethod
+    def default_company():
+        return Transaction().context.get('company')
 
     @fields.depends('company')
     def on_change_company(self):
@@ -68,12 +62,21 @@ class PrintGeneralLedgerCompany(ModelView):
             'end_period': None,
             }
 
+    @classmethod
+    def default_fiscalyear(cls):
+        FiscalYear = Pool().get('account.fiscalyear')
+        return FiscalYear.find(cls.default_company(), exception=False)
+
     @fields.depends('fiscalyear')
     def on_change_fiscalyear(self):
         return {
             'start_period': None,
             'end_period': None,
             }
+
+    @staticmethod
+    def default_output_format():
+        return 'pdf'
 
 
 class PrintGeneralLedger(Wizard):
@@ -89,30 +92,22 @@ class PrintGeneralLedger(Wizard):
     print_ = StateAction(
         'account_jasper_reports_multicompany.report_general_ledger')
 
-    def do_print_(self, action):
-        data = {
-            'companies': [],
-            'account_templates': [x.id for x in self.start.account_templates],
-            'parties': [x.id for x in self.start.parties],
-            'output_format': self.start.output_format,
-            }
-        for company in self.start.companies:
-            data['companies'].append({
-                'company': company.company.id,
-                'fiscalyear': company.fiscalyear.id,
-                'start_period': (company.start_period.id
-                    if company.start_period else None),
-                'end_period': (company.end_period.id
-                    if company.end_period else None),
+    @classmethod
+    def __setup__(cls):
+        super(PrintGeneralLedger, cls).__setup__()
+        cls._error_messages.update({
+                'missing_fiscalyear_multicompany': (
+                    'The Company "%(company)s" doesn\'t have a Fiscal Year '
+                    'with code or name "%(fiscalyear)s".\nIt won\'t be '
+                    'included in report.'),
+                'missing_period_multicompany': (
+                    'The Fiscal Year "%(fiscalyear)s" of Company "%(company)s"'
+                    ' doesn\'t have a Period with code or name "%(period)s".\n'
+                    'This company won\'t be included in report.'),
                 })
-        return action, data
-
-    def transition_print_(self):
-        return 'end'
 
     def default_start(self, fields):
         pool = Pool()
-        FiscalYear = pool.get('account.fiscalyear')
         Party = pool.get('party.party')
 
         account_ids = []
@@ -126,14 +121,91 @@ class PrintGeneralLedger(Wizard):
                     account_ids.append(party.account_receivable.template.id)
                 party_ids.append(party.id)
         return {
-            'companies': [{
-                    'company': Transaction().context.get('company'),
-                    'fiscalyear': FiscalYear.find(
-                        Transaction().context.get('company'), exception=False),
-                    }],
             'account_templates': account_ids,
             'parties': party_ids,
             }
+
+    def do_print_(self, action):
+        pool = Pool()
+        FiscalYear = pool.get('account.fiscalyear')
+        Period = pool.get('account.period')
+
+        data = {
+            'companies': [{
+                    'company': self.start.company.id,
+                    'fiscalyear': self.start.fiscalyear.id,
+                    'start_period': self.start.start_period.id,
+                    'end_period': self.start.end_period.id,
+                    }],
+            'account_templates': [x.id for x in self.start.account_templates],
+            'parties': [x.id for x in self.start.parties],
+            'output_format': self.start.output_format,
+            }
+        for company in self.start.companies:
+            fiscalyears = FiscalYear.search([
+                    ('company', '=', company.id),
+                    ('code', '=', self.start.fiscalyear.code)
+                    if self.start.fiscalyear.code
+                    else ('name', '=', self.start.fiscalyear.name),
+                    ])
+            if not fiscalyears:
+                self.raise_user_warning(
+                    'missing_fiscalyear_%s_%s' % (
+                        company.id, self.start.fiscalyear.id),
+                    'missing_fiscalyear_multicompany', {
+                        'company': company.rec_name,
+                        'fiscalyear': (self.start.fiscalyear.code
+                            if self.start.fiscalyear.code
+                            else self.start.fiscalyear.name),
+                    })
+                continue
+
+            start_periods = Period.search([
+                    ('fiscalyear', '=', fiscalyears[0]),
+                    ('code', '=', self.start.start_period.code)
+                    if self.start.start_period.code
+                    else ('name', '=', self.start.start_period.name),
+                    ])
+            if not start_periods:
+                self.raise_user_warning(
+                    'missing_period_%s_%s' % (company.id, fiscalyears[0].id),
+                    'missing_period_multicompany', {
+                        'company': company.rec_name,
+                        'fiscalyear': fiscalyears[0].rec_name,
+                        'period': (self.start.start_period.code
+                            if self.start.start_period.code
+                            else self.start.start_period.name),
+                    })
+                continue
+
+            end_periods = Period.search([
+                    ('fiscalyear', '=', fiscalyears[0]),
+                    ('code', '=', self.start.end_period.code)
+                    if self.start.end_period.code
+                    else ('name', '=', self.start.end_period.name),
+                    ])
+            if not end_periods:
+                self.raise_user_warning(
+                    'missing_period_%s_%s' % (company.id, fiscalyears[0].id),
+                    'missing_period_multicompany', {
+                        'company': company.rec_name,
+                        'fiscalyear': fiscalyears[0].rec_name,
+                        'period': (self.start.end_period.code
+                            if self.start.end_period.code
+                            else self.start.end_period.name),
+                    })
+                continue
+
+            data['companies'].append({
+                'company': company.id,
+                'fiscalyear': fiscalyears[0].id,
+                'start_period': start_periods[0].id,
+                'end_period': end_periods[0].id,
+                })
+        return action, data
+
+    def transition_print_(self):
+        return 'end'
 
 
 class GeneralLedgerReport(JasperReport):
@@ -142,6 +214,7 @@ class GeneralLedgerReport(JasperReport):
     @classmethod
     def prepare(cls, data):
         pool = Pool()
+        Account = pool.get('account.account')
         AccountTemplate = pool.get('account.account.template')
         Company = pool.get('company.company')
         FiscalYear = pool.get('account.fiscalyear')
@@ -240,7 +313,8 @@ class GeneralLedgerReport(JasperReport):
                     aa.id = aml.account AND
                     aml.id in (%s)
                 ORDER BY
-                    aa.template,
+                    am.company,
+                    aml.account,
                     -- Sort by party only when account is of
                     -- type 'receivable' or 'payable'
                     CASE WHEN aa.kind in ('receivable', 'payable') THEN
@@ -251,18 +325,61 @@ class GeneralLedgerReport(JasperReport):
                 """ % ','.join([str(x.id) for x in lines]))
             line_ids = [x[0] for x in cursor.fetchall()]
 
+        initial_balance_date = start_period.start_date - timedelta(days=1)
+        init_values = {}
+        init_party_values = {}
+        for company_data in companies:
+            accounts = Account.search([
+                    ('company', '=', company_data['company']),
+                    ('template', 'in', account_templates),
+                    ])
+            with Transaction().set_context(
+                    company=company_data['company'].id,
+                    date=initial_balance_date):
+                init_values.update(
+                    Account.read_account_vals(accounts,
+                        with_moves=True,
+                        exclude_party_moves=True))
+            with Transaction().set_context(
+                    company=company_data['company'].id,
+                    date=initial_balance_date):
+                init_party_values.update(
+                    Party.get_account_values_by_party(parties, accounts))
+
         records = []
+        lastKey = None
         sequence = 0
         for line in Line.browse(line_ids):
             if line.account.kind in ('receivable', 'payable'):
-                currentKey = (line.account.template, line.party and line.party
-                    or None)
+                currentKey = (
+                    line.move.company,
+                    line.account,
+                    line.party if line.party else None)
             else:
-                currentKey = line.account.template
+                currentKey = (
+                    line.move.company,
+                    line.account)
+
+            if lastKey != currentKey:
+                lastKey = currentKey
+                if len(currentKey) == 3:
+                    account_id = currentKey[1].id
+                    party_id = currentKey[2].id if currentKey[2] else None
+                else:
+                    account_id = currentKey[1].id
+                    party_id = None
+                if party_id:
+                    balance = init_party_values.get(account_id,
+                        {}).get(party_id, {}).get('balance', Decimal(0))
+                else:
+                    balance = init_values.get(account_id, {}).get('balance',
+                        Decimal(0))
+            balance += line.debit - line.credit
+
             sequence += 1
             records.append({
                     'sequence': sequence,
-                    'company': line.move.company.rec_name,
+                    'company': currentKey[0].rec_name,
                     'key': str(currentKey),
                     'account_code': line.account.code or '',
                     'account_name': line.account.name or '',
@@ -277,6 +394,7 @@ class GeneralLedgerReport(JasperReport):
                     'party_name': line.party.name if line.party else '',
                     'credit': line.credit,
                     'debit': line.debit,
+                    'balance': balance,
                     })
         return records, parameters
 
