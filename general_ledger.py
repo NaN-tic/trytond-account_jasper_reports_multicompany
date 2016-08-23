@@ -300,7 +300,7 @@ class GeneralLedgerReport(JasperReport):
         lines = Line.search(domain)
         line_ids = []
         if lines:
-            cursor = Transaction().cursor
+            cursor = Transaction().connection.cursor()
             cursor.execute("""
                 SELECT
                     aml.id
