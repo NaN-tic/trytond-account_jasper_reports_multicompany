@@ -54,13 +54,12 @@ class PrintGeneralLedgerStart(ModelView):
 
     @fields.depends('company')
     def on_change_company(self):
-        FiscalYear = Pool().get('account.fiscalyear')
-        return {
-            'fiscalyear': (FiscalYear.find(self.company.id, exception=False)
-                if self.company else None),
-            'start_period': None,
-            'end_period': None,
-            }
+        self.fiscalyear = None
+        self.start_period = None
+        self.end_period = None
+        if self.company:
+            FiscalYear = Pool().get('account.fiscalyear')
+            self.fiscalyear = FiscalYear.find(self.company.id, exception=False)
 
     @classmethod
     def default_fiscalyear(cls):
@@ -69,10 +68,8 @@ class PrintGeneralLedgerStart(ModelView):
 
     @fields.depends('fiscalyear')
     def on_change_fiscalyear(self):
-        return {
-            'start_period': None,
-            'end_period': None,
-            }
+        self.start_period = None
+        self.end_period = None
 
     @staticmethod
     def default_output_format():
