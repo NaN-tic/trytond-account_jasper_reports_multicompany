@@ -341,7 +341,7 @@ class GeneralLedgerReport(JasperReport):
                     company=company_data['company'].id,
                     date=initial_balance_date):
                 init_party_values.update(
-                    Party.get_account_values_by_party(parties, accounts))
+                    Party.get_account_values_by_party(parties, accounts, company_data['company']))
 
         records = []
         lastKey = None
