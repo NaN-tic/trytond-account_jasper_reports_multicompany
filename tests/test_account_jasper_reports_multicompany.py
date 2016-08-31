@@ -4,61 +4,56 @@ import unittest
 from decimal import Decimal
 
 import trytond.tests.test_tryton
-from trytond.tests.test_tryton import test_view, test_depends
-from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT
+from trytond.pool import Pool
+from trytond.tests.test_tryton import ModuleTestCase, with_transaction
 from trytond.transaction import Transaction
 
+from trytond.modules.company.tests import create_company, set_company
+from trytond.modules.account.tests import create_chart, get_fiscalyear
+from trytond.modules.account_invoice.tests import set_invoice_sequences
 
-class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
+
+class AccountJasperReportsMulticompanyTestCase(ModuleTestCase):
     'Test Account Jasper Reports Multicompany module'
+    module = 'account_jasper_reports_multicompany'
 
-    def setUp(self):
-        trytond.tests.test_tryton.install_module(
-            'account_jasper_reports_multicompany')
-        self.account = POOL.get('account.account')
-        self.company = POOL.get('company.company')
-        self.party = POOL.get('party.party')
-        self.party_address = POOL.get('party.address')
-        self.fiscalyear = POOL.get('account.fiscalyear')
-        self.move = POOL.get('account.move')
-        self.journal = POOL.get('account.journal')
-        self.print_general_ledger_company = POOL.get(
-            'account_jasper_reports_multicompany.print_general_ledger.company')
-        self.print_general_ledger = POOL.get(
+    @with_transaction()
+    def test0030general_ledger(self):
+        'Test General Ledger'
+        pool = Pool()
+        Account = pool.get('account.account')
+        Party = pool.get('party.party')
+        PrintGeneralLedger = pool.get(
             'account_jasper_reports_multicompany.print_general_ledger',
             type='wizard')
-        self.general_ledger_report = POOL.get(
+        GeneralLedgerReport = pool.get(
             'account_jasper_reports_multicompany.general_ledger',
             type='report')
 
-    def test0005views(self):
-        'Test views'
-        test_view('account_jasper_reports_multicompany')
+        # Create Company
+        company = create_company()
+        with set_company(company):
 
-    def test0006depends(self):
-        'Test depends'
-        test_depends()
+            # Create Chart of Accounts
+            create_chart(company)
 
-    def test0030general_ledger(self):
-        'Test General Ledger'
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            # TODO: create two companies (and account chart, fiscal year...)
-            self.create_moves()
-            company, = self.company.search([
-                    ('rec_name', '=', 'Dunder Mifflin')])
-            fiscalyear, = self.fiscalyear.search([])
+            # Create Fiscalyear
+            fiscalyear = get_fiscalyear(company)
+            fiscalyear = set_invoice_sequences(fiscalyear)
+            fiscalyear.save()
+            fiscalyear.create_period([fiscalyear])
             period = fiscalyear.periods[0]
             last_period = fiscalyear.periods[-1]
-            session_id, _, _ = self.print_general_ledger.create()
-            print_general_ledger = self.print_general_ledger(session_id)
+
+            self.create_moves(fiscalyear)
+
+            session_id, _, _ = PrintGeneralLedger.create()
+            print_general_ledger = PrintGeneralLedger(session_id)
             print_general_ledger.start.companies = []
-            print_general_ledger_company = self.print_general_ledger_company()
-            print_general_ledger.start.companies.append(
-                print_general_ledger_company)
-            print_general_ledger_company.company = company
-            print_general_ledger_company.fiscalyear = fiscalyear
-            print_general_ledger_company.start_period = period
-            print_general_ledger_company.end_period = last_period
+            print_general_ledger.start.company = company
+            print_general_ledger.start.on_change_company()
+            print_general_ledger.start.start_period = period
+            print_general_ledger.start.end_period = last_period
             print_general_ledger.start.parties = []
             print_general_ledger.start.account_templates = []
             print_general_ledger.start.output_format = 'pdf'
@@ -74,7 +69,7 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
             self.assertEqual(len(data['account_templates']), 0)
             self.assertEqual(len(data['parties']), 0)
             self.assertEqual(data['output_format'], 'pdf')
-            records, parameters = self.general_ledger_report.prepare(data)
+            records, parameters = GeneralLedgerReport.prepare(data)
             self.assertEqual(len(records), 12)
             self.assertEqual(parameters['start_period'], period.name)
             self.assertEqual(parameters['end_period'], last_period.name)
@@ -93,21 +88,18 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
                 self.assertEqual(date, expected_value.strftime('%d/%m/%Y'))
 
             # Filtered by periods
-            session_id, _, _ = self.print_general_ledger.create()
-            print_general_ledger = self.print_general_ledger(session_id)
+            session_id, _, _ = PrintGeneralLedger.create()
+            print_general_ledger = PrintGeneralLedger(session_id)
             print_general_ledger.start.companies = []
-            print_general_ledger_company = self.print_general_ledger_company()
-            print_general_ledger.start.companies.append(
-                print_general_ledger_company)
-            print_general_ledger_company.company = company
-            print_general_ledger_company.fiscalyear = fiscalyear
-            print_general_ledger_company.start_period = period
-            print_general_ledger_company.end_period = period
+            print_general_ledger.start.company = company
+            print_general_ledger.start.on_change_company()
+            print_general_ledger.start.start_period = period
+            print_general_ledger.start.end_period = period
             print_general_ledger.start.parties = []
             print_general_ledger.start.account_templates = []
             print_general_ledger.start.output_format = 'pdf'
             _, data = print_general_ledger.do_print_(None)
-            records, parameters = self.general_ledger_report.prepare(data)
+            records, parameters = GeneralLedgerReport.prepare(data)
             self.assertEqual(len(records), 8)
             credit = sum([m['credit'] for m in records])
             debit = sum([m['debit'] for m in records])
@@ -118,25 +110,22 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
                 self.assertEqual(date, period.start_date.strftime('%d/%m/%Y'))
 
             # Filtered by accounts
-            expense, = self.account.search([
+            expense, = Account.search([
                     ('kind', '=', 'expense'),
                     ])
-            session_id, _, _ = self.print_general_ledger.create()
-            print_general_ledger = self.print_general_ledger(session_id)
+            session_id, _, _ = PrintGeneralLedger.create()
+            print_general_ledger = PrintGeneralLedger(session_id)
             print_general_ledger.start.companies = []
-            print_general_ledger_company = self.print_general_ledger_company()
-            print_general_ledger.start.companies.append(
-                print_general_ledger_company)
-            print_general_ledger_company.company = company
-            print_general_ledger_company.fiscalyear = fiscalyear
-            print_general_ledger_company.start_period = period
-            print_general_ledger_company.end_period = last_period
+            print_general_ledger.start.company = company
+            print_general_ledger.start.on_change_company()
+            print_general_ledger.start.start_period = period
+            print_general_ledger.start.end_period = last_period
             print_general_ledger.start.parties = []
             print_general_ledger.start.account_templates = [
                 expense.template.id]
             print_general_ledger.start.output_format = 'pdf'
             _, data = print_general_ledger.do_print_(None)
-            records, parameters = self.general_ledger_report.prepare(data)
+            records, parameters = GeneralLedgerReport.prepare(data)
             self.assertEqual(
                 parameters['accounts'], expense.template.code or '')
             self.assertEqual(len(records), 3)
@@ -146,24 +135,21 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
             self.assertEqual(debit, Decimal('130.0'))
 
             # Filter by parties
-            customer1, = self.party.search([
+            customer1, = Party.search([
                     ('name', '=', 'customer1'),
                     ])
-            session_id, _, _ = self.print_general_ledger.create()
-            print_general_ledger = self.print_general_ledger(session_id)
+            session_id, _, _ = PrintGeneralLedger.create()
+            print_general_ledger = PrintGeneralLedger(session_id)
             print_general_ledger.start.companies = []
-            print_general_ledger_company = self.print_general_ledger_company()
-            print_general_ledger.start.companies.append(
-                print_general_ledger_company)
-            print_general_ledger_company.company = company
-            print_general_ledger_company.fiscalyear = fiscalyear
-            print_general_ledger_company.start_period = period
-            print_general_ledger_company.end_period = last_period
+            print_general_ledger.start.company = company
+            print_general_ledger.start.on_change_company()
+            print_general_ledger.start.start_period = period
+            print_general_ledger.start.end_period = last_period
             print_general_ledger.start.parties = [customer1.id]
             print_general_ledger.start.account_templates = []
             print_general_ledger.start.output_format = 'pdf'
             _, data = print_general_ledger.do_print_(None)
-            records, parameters = self.general_ledger_report.prepare(data)
+            records, parameters = GeneralLedgerReport.prepare(data)
             self.assertEqual(parameters['parties'], customer1.rec_name)
             self.assertEqual(len(records), 7)
             credit = sum([m['credit'] for m in records])
@@ -178,25 +164,22 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
             self.assertEqual(debit, Decimal('100.0'))
 
             # Filter by parties and accounts
-            receivable, = self.account.search([
+            receivable, = Account.search([
                     ('kind', '=', 'receivable'),
                     ])
-            session_id, _, _ = self.print_general_ledger.create()
-            print_general_ledger = self.print_general_ledger(session_id)
+            session_id, _, _ = PrintGeneralLedger.create()
+            print_general_ledger = PrintGeneralLedger(session_id)
             print_general_ledger.start.companies = []
-            print_general_ledger_company = self.print_general_ledger_company()
-            print_general_ledger.start.companies.append(
-                print_general_ledger_company)
-            print_general_ledger_company.company = company
-            print_general_ledger_company.fiscalyear = fiscalyear
-            print_general_ledger_company.start_period = period
-            print_general_ledger_company.end_period = last_period
+            print_general_ledger.start.company = company
+            print_general_ledger.start.on_change_company()
+            print_general_ledger.start.start_period = period
+            print_general_ledger.start.end_period = last_period
             print_general_ledger.start.parties = [customer1.id]
             print_general_ledger.start.account_templates = [
                 receivable.template.id]
             print_general_ledger.start.output_format = 'pdf'
             _, data = print_general_ledger.do_print_(None)
-            records, parameters = self.general_ledger_report.prepare(data)
+            records, parameters = GeneralLedgerReport.prepare(data)
             self.assertEqual(parameters['parties'], customer1.rec_name)
             self.assertEqual(parameters['accounts'],
                 receivable.template.code or '')
@@ -208,60 +191,66 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
             self.assertEqual(True, all(m['party_name'] != ''
                     for m in records))
 
-    def create_moves(self, fiscalyear=None):
+    def create_moves(self, fiscalyear):
         'Create moves for running tests'
-        if not fiscalyear:
-            fiscalyear, = self.fiscalyear.search([])
+        pool = Pool()
+        Account = pool.get('account.account')
+        Party = pool.get('party.party')
+        Address = pool.get('party.address')
+        Move = pool.get('account.move')
+        Journal = pool.get('account.journal')
+
         period = fiscalyear.periods[0]
         last_period = fiscalyear.periods[-1]
-        journal_revenue, = self.journal.search([
+        journal_revenue, = Journal.search([
                 ('code', '=', 'REV'),
                 ])
-        journal_expense, = self.journal.search([
+        journal_expense, = Journal.search([
                 ('code', '=', 'EXP'),
                 ])
-        chart, = self.account.search([
+        chart, = Account.search([
                 ('parent', '=', None),
                 ])
-        revenue, = self.account.search([
+        revenue, = Account.search([
                 ('kind', '=', 'revenue'),
                 ])
         revenue.parent = chart
         revenue.code = '7'
         revenue.save()
-        receivable, = self.account.search([
+        receivable, = Account.search([
                 ('kind', '=', 'receivable'),
                 ])
         receivable.parent = chart
         receivable.code = '43'
         receivable.save()
-        expense, = self.account.search([
+        expense, = Account.search([
                 ('kind', '=', 'expense'),
                 ])
         expense.parent = chart
         expense.code = '6'
         expense.save()
-        payable, = self.account.search([
+        payable, = Account.search([
                 ('kind', '=', 'payable'),
                 ])
         payable.parent = chart
         payable.code = '41'
         payable.save()
-        self.account.create([{
+        Account.create([{
                     'name': 'View',
                     'code': '1',
                     'kind': 'view',
                     'parent': chart.id,
                     }])
-        #Create some parties if not exist
-        if self.party.search([('name', '=', 'customer1')]):
-            customer1, = self.party.search([('name', '=', 'customer1')])
-            customer2, = self.party.search([('name', '=', 'customer2')])
-            supplier1, = self.party.search([('name', '=', 'supplier1')])
+
+        # Create some parties if not exist
+        if Party.search([('name', '=', 'customer1')]):
+            customer1, = Party.search([('name', '=', 'customer1')])
+            customer2, = Party.search([('name', '=', 'customer2')])
+            supplier1, = Party.search([('name', '=', 'supplier1')])
             with Transaction().set_context(active_test=False):
-                supplier2, = self.party.search([('name', '=', 'supplier2')])
+                supplier2, = Party.search([('name', '=', 'supplier2')])
         else:
-            customer1, customer2, supplier1, supplier2 = self.party.create([{
+            customer1, customer2, supplier1, supplier2 = Party.create([{
                         'name': 'customer1',
                         }, {
                         'name': 'customer2',
@@ -271,13 +260,14 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
                         'name': 'supplier2',
                         'active': False,
                         }])
-            self.party_address.create([{
+            Address.create([{
                             'active': True,
                             'party': customer1.id,
                         }, {
                             'active': True,
                             'party': supplier1.id,
                         }])
+
         # Create some moves
         vlist = [
             {
@@ -371,8 +361,8 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
                     ],
                 },
             ]
-        moves = self.move.create(vlist)
-        self.move.post(moves)
+        moves = Move.create(vlist)
+        Move.post(moves)
         # Set account inactive
         expense.active = False
         expense.save()
@@ -380,12 +370,6 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
 
 def suite():
     suite = trytond.tests.test_tryton.suite()
-    from trytond.modules.account.tests import test_account
-    for test in test_account.suite():
-        # Skip doctest
-        class_name = test.__class__.__name__
-        if test not in suite and class_name != 'DocFileCase':
-            suite.addTest(test)
     suite.addTests(unittest.TestLoader().loadTestsFromTestCase(
         AccountJasperReportsMulticompanyTestCase))
     return suite
