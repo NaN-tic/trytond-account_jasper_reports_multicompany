@@ -23,7 +23,7 @@ class AccountJasperReportsMulticompanyTestCase(unittest.TestCase):
         self.move = POOL.get('account.move')
         self.journal = POOL.get('account.journal')
         self.print_general_ledger_company = POOL.get(
-            'account_jasper_reports_multicompany.print_general_ledger.company')
+            'account_jasper_reports_multicompany.print_general_ledger.start')
         self.print_general_ledger = POOL.get(
             'account_jasper_reports_multicompany.print_general_ledger',
             type='wizard')
