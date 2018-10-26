@@ -63,83 +63,83 @@ msgctxt ""
 msgid "Start Period"
 msgstr "Período inicial"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid " From"
 msgstr " De"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Account"
 msgstr "Cuenta"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "All Accounts"
 msgstr "Todas las cuentas"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "All Parties"
 msgstr "Todos los terceros"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Balance"
 msgstr "Saldo"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Company"
 msgstr "Empresa"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Credit"
 msgstr "Haber"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Date"
 msgstr "Fecha"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Debit"
 msgstr "Debe"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Description"
 msgstr "Descripción"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Fiscal Year: "
 msgstr "Ejercicio fiscal:"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "General Ledger Multicompany"
 msgstr "Libro mayor multiempresa"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Number"
 msgstr "Número"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Party"
 msgstr "Tercero"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Party or Account"
 msgstr "Tercero o cuenta"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Previous balance..."
 msgstr "Balance anterior..."
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Reference"
 msgstr "Referencia"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "To"
 msgstr "Para"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid "Total"
 msgstr "Total"
 
-msgctxt "jasper:account_jasper_reports_multicompany.general_ledger:"
+msgctxt "report:account_jasper_reports_multicompany.general_ledger:"
 msgid ""
 "When the Move number is between '()' means it hasn't Post Number and the "
 "shown number is the provisional one."
