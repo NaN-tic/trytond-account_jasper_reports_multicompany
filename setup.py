@@ -8,7 +8,10 @@ import ConfigParser
 
 MODULE = 'account_jasper_reports_multicompany'
 PREFIX = 'nantic'
-MODULE2PREFIX = {}
+MODULE2PREFIX = {
+    'account_jasper_reports': 'trytonspain',
+    'jasper_reports': 'trytonspain',
+}
 
 
 def read(fname):
@@ -62,7 +65,8 @@ setup(name='%s_%s' % (PREFIX, MODULE),
         ],
     package_data={
         'trytond.modules.%s' % MODULE: (info.get('xml', [])
-            + ['tryton.cfg', 'locale/*.po', 'tests/*.rst']),
+            + ['tryton.cfg', 'locale/*.po', 'tests/*.rst', 'view/*.xml',
+               '*.jrxml']),
         },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
