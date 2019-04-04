@@ -111,7 +111,7 @@ class AccountJasperReportsMulticompanyTestCase(ModuleTestCase):
 
             # Filtered by accounts
             expense, = Account.search([
-                    ('kind', '=', 'expense'),
+                    ('type.expense', '=', True),
                     ])
             session_id, _, _ = PrintGeneralLedger.create()
             print_general_ledger = PrintGeneralLedger(session_id)
@@ -165,7 +165,7 @@ class AccountJasperReportsMulticompanyTestCase(ModuleTestCase):
 
             # Filter by parties and accounts
             receivable, = Account.search([
-                    ('kind', '=', 'receivable'),
+                    ('type.receivable', '=', True),
                     ])
             session_id, _, _ = PrintGeneralLedger.create()
             print_general_ledger = PrintGeneralLedger(session_id)
@@ -212,33 +212,32 @@ class AccountJasperReportsMulticompanyTestCase(ModuleTestCase):
                 ('parent', '=', None),
                 ])
         revenue, = Account.search([
-                ('kind', '=', 'revenue'),
+                ('type.revenue', '=', True),
                 ])
         revenue.parent = chart
         revenue.code = '7'
         revenue.save()
         receivable, = Account.search([
-                ('kind', '=', 'receivable'),
+                ('type.receivable', '=', True),
                 ])
         receivable.parent = chart
         receivable.code = '43'
         receivable.save()
         expense, = Account.search([
-                ('kind', '=', 'expense'),
+                ('type.expense', '=', True),
                 ])
         expense.parent = chart
         expense.code = '6'
         expense.save()
         payable, = Account.search([
-                ('kind', '=', 'payable'),
+                ('type.payable', '=', True),
                 ])
         payable.parent = chart
         payable.code = '41'
         payable.save()
         Account.create([{
                     'name': 'View',
-                    'code': '1',
-                    'kind': 'view',
+                    'code': '1',                    
                     'parent': chart.id,
                     }])
 

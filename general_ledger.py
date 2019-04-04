@@ -9,6 +9,8 @@ from trytond.model import ModelView, fields
 from trytond.wizard import Wizard, StateView, StateAction, Button
 from trytond.pyson import Eval
 from trytond.modules.jasper_reports.jasper import JasperReport
+from trytond.i18n import gettext
+from trytond.exceptions import UserError, UserWarning
 
 __all__ = ['PrintGeneralLedgerStart',
     'PrintGeneralLedger', 'GeneralLedgerReport']
@@ -89,20 +91,6 @@ class PrintGeneralLedger(Wizard):
     print_ = StateAction(
         'account_jasper_reports_multicompany.report_general_ledger')
 
-    @classmethod
-    def __setup__(cls):
-        super(PrintGeneralLedger, cls).__setup__()
-        cls._error_messages.update({
-                'missing_fiscalyear_multicompany': (
-                    'The Company "%(company)s" doesn\'t have a Fiscal Year '
-                    'with code or name "%(fiscalyear)s".\nIt won\'t be '
-                    'included in report.'),
-                'missing_period_multicompany': (
-                    'The Fiscal Year "%(fiscalyear)s" of Company "%(company)s"'
-                    ' doesn\'t have a Period with code or name "%(period)s".\n'
-                    'This company won\'t be included in report.'),
-                })
-
     def default_start(self, fields):
         pool = Pool()
         Party = pool.get('party.party')
@@ -146,15 +134,16 @@ class PrintGeneralLedger(Wizard):
                     else ('name', '=', self.start.fiscalyear.name),
                     ])
             if not fiscalyears:
-                self.raise_user_warning(
+                raise UserWarning(
                     'missing_fiscalyear_%s_%s' % (
                         company.id, self.start.fiscalyear.id),
-                    'missing_fiscalyear_multicompany', {
-                        'company': company.rec_name,
-                        'fiscalyear': (self.start.fiscalyear.code
+                    gettext(
+                        'account_jasper_reports_multicompany.missing_fiscalyear_multicompany',
+                        company=company.rec_name,
+                        fiscalyear=(self.start.fiscalyear.code
                             if self.start.fiscalyear.code
                             else self.start.fiscalyear.name),
-                    })
+                    ))
                 continue
 
             start_periods = Period.search([
@@ -164,15 +153,16 @@ class PrintGeneralLedger(Wizard):
                     else ('name', '=', self.start.start_period.name),
                     ])
             if not start_periods:
-                self.raise_user_warning(
+                raise UserWarning(
                     'missing_period_%s_%s' % (company.id, fiscalyears[0].id),
-                    'missing_period_multicompany', {
-                        'company': company.rec_name,
-                        'fiscalyear': fiscalyears[0].rec_name,
-                        'period': (self.start.start_period.code
+                    gettext(
+                    'account_jasper_reports_multicompany.missing_period_multicompany',
+                        company=company.rec_name,
+                        fiscalyear=fiscalyears[0].rec_name,
+                        period=(self.start.start_period.code
                             if self.start.start_period.code
                             else self.start.start_period.name),
-                    })
+                    ))
                 continue
 
             end_periods = Period.search([
@@ -182,15 +172,16 @@ class PrintGeneralLedger(Wizard):
                     else ('name', '=', self.start.end_period.name),
                     ])
             if not end_periods:
-                self.raise_user_warning(
+                raise UserWarning(
                     'missing_period_%s_%s' % (company.id, fiscalyears[0].id),
-                    'missing_period_multicompany', {
-                        'company': company.rec_name,
-                        'fiscalyear': fiscalyears[0].rec_name,
-                        'period': (self.start.end_period.code
+                    gettext(
+                        'account_jasper_reports_multicompany.missing_period_multicompany',
+                        company=company.rec_name,
+                        fiscalyear=fiscalyears[0].rec_name,
+                        period=(self.start.end_period.code
                             if self.start.end_period.code
                             else self.start.end_period.name),
-                    })
+                    ))
                 continue
 
             data['companies'].append({
@@ -286,12 +277,14 @@ class GeneralLedgerReport(JasperReport):
         parties_domain = []
         if parties:
             parties_domain = [
-                'OR', [
-                    ('account.kind', 'in', ['receivable', 'payable']),
+                'OR', ['OR', [
+                    ('account.type.receivable', '=', True),
+                    ('account.type.payable', '=', True)],
                     ('party', 'in', [p.id for p in parties])],
                 [
-                    ('account.kind', 'not in', ['receivable', 'payable'])
-                ]]
+                    ('account.type.receivable', '=', False),
+                    ('account.type.payable', '=', False)],
+                ]
             domain.append(parties_domain)
 
         lines = Line.search(domain)
@@ -304,17 +297,19 @@ class GeneralLedgerReport(JasperReport):
                 FROM
                     account_move_line aml,
                     account_move am,
-                    account_account aa
+                    account_account aa,
+                    account_account_type at
                 WHERE
                     am.id = aml.move AND
                     aa.id = aml.account AND
+                    aa.type = at.id AND
                     aml.id in (%s)
                 ORDER BY
                     am.company,
                     aml.account,
                     -- Sort by party only when account is of
                     -- type 'receivable' or 'payable'
-                    CASE WHEN aa.kind in ('receivable', 'payable') THEN
+                    CASE WHEN at.receivable == true or at.payable == true THEN
                            aml.party ELSE 0 END,
                     am.date,
                     am.description,
@@ -347,7 +342,7 @@ class GeneralLedgerReport(JasperReport):
         lastKey = None
         sequence = 0
         for line in Line.browse(line_ids):
-            if line.account.kind in ('receivable', 'payable'):
+            if line.account.type.receivable or line.account.type.payable:
                 currentKey = (
                     line.move.company,
                     line.account,
@@ -374,13 +369,21 @@ class GeneralLedgerReport(JasperReport):
             balance += line.debit - line.credit
 
             sequence += 1
+            account_type = 'payable'
+            if line.account.type.receivable:
+                account_type = 'receivable'
+            elif line.account.type.expense:
+                account_type = 'expense'
+            elif line.account.type.revenue:
+                account_type = 'revenue'
+
             records.append({
                     'sequence': sequence,
                     'company': currentKey[0].rec_name,
                     'key': str(currentKey),
                     'account_code': line.account.code or '',
                     'account_name': line.account.name or '',
-                    'account_type': line.account.kind,
+                    'account_type': account_type,
                     'date': line.date.strftime('%d/%m/%Y'),
                     'move_line_name': line.description or '',
                     'ref': (line.origin.rec_name if line.origin and

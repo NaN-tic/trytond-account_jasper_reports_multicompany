@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<tryton>
+    <data group="1">
+      <record model="ir.message" id="missing_fiscalyear_multicompany">
+          <field name="text">
+              The Company "%(company)s" doesn\'t have a Fiscal Year
+              with code or name "%(fiscalyear)s".\nIt won\'t be
+              included in report.</field>
+      </record>
+      <record model="ir.message" id="missing_period_multicompany">
+          <field name="text">
+            The Fiscal Year "%(fiscalyear)s" of Company "%(company)s"
+            doesn\'t have a Period with code or name "%(period)s".\n
+            This company won\'t be included in report.</field>
+      </record>
+    </data>
+</tryton>
