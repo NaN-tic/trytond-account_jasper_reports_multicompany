@@ -314,7 +314,7 @@ class GeneralLedgerReport(JasperReport):
                     am.date,
                     am.description,
                     aml.id
-                """ % ','.join([str(x.id) for x in lines]))
+                """ % ','.join([str(x.id) for x in lines if x]))
             line_ids = [x[0] for x in cursor.fetchall()]
 
         initial_balance_date = start_period.start_date - timedelta(days=1)
