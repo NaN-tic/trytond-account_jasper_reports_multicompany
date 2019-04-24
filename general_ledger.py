@@ -10,7 +10,7 @@ from trytond.wizard import Wizard, StateView, StateAction, Button
 from trytond.pyson import Eval
 from trytond.modules.jasper_reports.jasper import JasperReport
 from trytond.i18n import gettext
-from trytond.exceptions import UserError, UserWarning
+from trytond.exceptions import UserWarning
 
 __all__ = ['PrintGeneralLedgerStart',
     'PrintGeneralLedger', 'GeneralLedgerReport']
