@@ -114,7 +114,7 @@ class PrintGeneralLedger(Wizard):
         pool = Pool()
         FiscalYear = pool.get('account.fiscalyear')
         Period = pool.get('account.period')
-
+        Warning = pool.get('res.user.warning')
         data = {
             'companies': [{
                     'company': self.start.company.id,
@@ -133,10 +133,10 @@ class PrintGeneralLedger(Wizard):
                     if self.start.fiscalyear.code
                     else ('name', '=', self.start.fiscalyear.name),
                     ])
-            if not fiscalyears:
-                raise UserWarning(
-                    'missing_fiscalyear_%s_%s' % (
-                        company.id, self.start.fiscalyear.id),
+            key = 'missing_fiscalyear_%s_%s' % (
+                company.id, self.start.fiscalyear.id)
+            if not fiscalyears and Warning.check(key):
+                raise UserWarning(key,
                     gettext(
                         'account_jasper_reports_multicompany.missing_fiscalyear_multicompany',
                         company=company.rec_name,
@@ -152,10 +152,9 @@ class PrintGeneralLedger(Wizard):
                     if self.start.start_period.code
                     else ('name', '=', self.start.start_period.name),
                     ])
-            if not start_periods:
-                raise UserWarning(
-                    'missing_period_%s_%s' % (company.id, fiscalyears[0].id),
-                    gettext(
+            key = 'missing_period_%s_%s' % (company.id, fiscalyears[0].id)
+            if not start_periods and Warning.check(key):
+                raise UserWarning(key, gettext(
                     'account_jasper_reports_multicompany.missing_period_multicompany',
                         company=company.rec_name,
                         fiscalyear=fiscalyears[0].rec_name,
@@ -171,10 +170,8 @@ class PrintGeneralLedger(Wizard):
                     if self.start.end_period.code
                     else ('name', '=', self.start.end_period.name),
                     ])
-            if not end_periods:
-                raise UserWarning(
-                    'missing_period_%s_%s' % (company.id, fiscalyears[0].id),
-                    gettext(
+            if not end_periods and Warning.check(key):
+                raise UserWarning(key, gettext(
                         'account_jasper_reports_multicompany.missing_period_multicompany',
                         company=company.rec_name,
                         fiscalyear=fiscalyears[0].rec_name,
