@@ -18,8 +18,9 @@ copyright notices and license terms. -->
             <field name="report_name">account_jasper_reports_multicompany.general_ledger</field>
             <field name="report">account_jasper_reports_multicompany/general_ledger.jrxml</field>
             <field name="extension">pdf</field>
+            <field name="template_extension">jrxml</field>
         </record>
-        
+
         <menuitem id="menu_print_general_ledger_multicompany"
             action="wizard_print_general_ledger" icon="tryton-print"
             parent="account.menu_reporting"/>
