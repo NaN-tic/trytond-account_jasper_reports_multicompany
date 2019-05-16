@@ -138,67 +138,71 @@ class PrintGeneralLedger(Wizard):
             'parties': [x.id for x in self.start.parties],
             'output_format': self.start.output_format,
             }
+
         for company in self.start.companies:
-            fiscalyears = FiscalYear.search([
-                    ('company', '=', company.id),
-                    ('code', '=', self.start.fiscalyear.code)
-                    if self.start.fiscalyear.code
-                    else ('name', '=', self.start.fiscalyear.name),
-                    ])
-            if not fiscalyears:
-                self.raise_user_warning(
-                    'missing_fiscalyear_%s_%s' % (
-                        company.id, self.start.fiscalyear.id),
-                    'missing_fiscalyear_multicompany', {
-                        'company': company.rec_name,
-                        'fiscalyear': (self.start.fiscalyear.code
-                            if self.start.fiscalyear.code
-                            else self.start.fiscalyear.name),
-                    })
+            if not company.intercompany_user:
                 continue
 
-            start_periods = Period.search([
-                    ('fiscalyear', '=', fiscalyears[0]),
-                    ('code', '=', self.start.start_period.code)
-                    if self.start.start_period.code
-                    else ('name', '=', self.start.start_period.name),
-                    ])
-            if not start_periods:
-                self.raise_user_warning(
-                    'missing_period_%s_%s' % (company.id, fiscalyears[0].id),
-                    'missing_period_multicompany', {
-                        'company': company.rec_name,
-                        'fiscalyear': fiscalyears[0].rec_name,
-                        'period': (self.start.start_period.code
-                            if self.start.start_period.code
-                            else self.start.start_period.name),
-                    })
-                continue
+            with Transaction().set_user(company.intercompany_user.id), \
+                    Transaction().set_context(company=company.id,
+                    companies=[company.id],
+                    _check_access=False):
+                fiscalyears = FiscalYear.search([
+                        ('company', '=', company.id),
+                        ('code', '=', self.start.fiscalyear.code)
+                        if self.start.fiscalyear.code
+                        else ('name', '=', self.start.fiscalyear.name),
+                        ], limit=1)
+                if not fiscalyears:
+                    self.raise_user_error(
+                        'missing_fiscalyear_multicompany', {
+                            'company': company.rec_name,
+                            'fiscalyear': (self.start.fiscalyear.code
+                                if self.start.fiscalyear.code
+                                else self.start.fiscalyear.name),
+                        })
 
-            end_periods = Period.search([
-                    ('fiscalyear', '=', fiscalyears[0]),
-                    ('code', '=', self.start.end_period.code)
-                    if self.start.end_period.code
-                    else ('name', '=', self.start.end_period.name),
-                    ])
-            if not end_periods:
-                self.raise_user_warning(
-                    'missing_period_%s_%s' % (company.id, fiscalyears[0].id),
-                    'missing_period_multicompany', {
-                        'company': company.rec_name,
-                        'fiscalyear': fiscalyears[0].rec_name,
-                        'period': (self.start.end_period.code
-                            if self.start.end_period.code
-                            else self.start.end_period.name),
-                    })
-                continue
+                fiscalyear, = fiscalyears
+                start_periods = Period.search([
+                        ('fiscalyear', '=', fiscalyear),
+                        ('code', '=', self.start.start_period.code)
+                        if self.start.start_period.code
+                        else ('name', '=', self.start.start_period.name),
+                        ], limit=1)
+                if not start_periods:
+                    self.raise_user_error(
+                        'missing_period_multicompany', {
+                            'company': company.rec_name,
+                            'fiscalyear': fiscalyear.rec_name,
+                            'period': (self.start.start_period.code
+                                if self.start.start_period.code
+                                else self.start.start_period.name),
+                        })
 
-            data['companies'].append({
-                'company': company.id,
-                'fiscalyear': fiscalyears[0].id,
-                'start_period': start_periods[0].id,
-                'end_period': end_periods[0].id,
-                })
+                end_periods = Period.search([
+                        ('fiscalyear', '=', fiscalyear),
+                        ('code', '=', self.start.end_period.code)
+                        if self.start.end_period.code
+                        else ('name', '=', self.start.end_period.name),
+                        ], limit=1)
+                if not end_periods:
+                    self.raise_user_error(
+                        'missing_period_multicompany', {
+                            'company': company.rec_name,
+                            'fiscalyear': fiscalyears.rec_name,
+                            'period': (self.start.end_period.code
+                                if self.start.end_period.code
+                                else self.start.end_period.name),
+                        })
+
+                    start_period, = start_periods
+                    end_period, = start_periods
+                data['companies'].append({
+                    'company': company.id,
+                    'fiscalyear': fiscalyear.id,
+                    'start_period': start_period.id,
+                    'end_period': end_period.id,
+                    })
         return action, data
 
     def transition_print_(self):
@@ -286,12 +290,14 @@ class GeneralLedgerReport(JasperReport):
         parties_domain = []
         if parties:
             parties_domain = [
-                'OR', [
-                    ('account.kind', 'in', ['receivable', 'payable']),
+                'OR', ['OR', [
+                    ('account.type.receivable', '=', True),
+                    ('account.type.payable', '=', True)],
                     ('party', 'in', [p.id for p in parties])],
                 [
-                    ('account.kind', 'not in', ['receivable', 'payable'])
-                ]]
+                    ('account.type.receivable', '=', False),
+                    ('account.type.payable', '=', False)],
+                ]
             domain.append(parties_domain)
 
         lines = Line.search(domain)
@@ -304,22 +310,24 @@ class GeneralLedgerReport(JasperReport):
                 FROM
                     account_move_line aml,
                     account_move am,
-                    account_account aa
+                    account_account aa,
+                    account_account_type at
                 WHERE
                     am.id = aml.move AND
                     aa.id = aml.account AND
+                    aa.type = at.id AND
                     aml.id in (%s)
                 ORDER BY
                     am.company,
                     aml.account,
                     -- Sort by party only when account is of
                     -- type 'receivable' or 'payable'
-                    CASE WHEN aa.kind in ('receivable', 'payable') THEN
+                    CASE WHEN at.receivable OR at.payable THEN
                            aml.party ELSE 0 END,
                     am.date,
                     am.description,
                     aml.id
-                """ % ','.join([str(x.id) for x in lines]))
+                """ % ','.join([str(x.id) for x in lines if x]))
             line_ids = [x[0] for x in cursor.fetchall()]
 
         initial_balance_date = start_period.start_date - timedelta(days=1)
@@ -347,7 +355,7 @@ class GeneralLedgerReport(JasperReport):
         lastKey = None
         sequence = 0
         for line in Line.browse(line_ids):
-            if line.account.kind in ('receivable', 'payable'):
+            if line.account.type.receivable or line.account.type.payable:
                 currentKey = (
                     line.move.company,
                     line.account,
@@ -374,13 +382,21 @@ class GeneralLedgerReport(JasperReport):
             balance += line.debit - line.credit
 
             sequence += 1
+            account_type = 'payable'
+            if line.account.type.receivable:
+                account_type = 'receivable'
+            elif line.account.type.expense:
+                account_type = 'expense'
+            elif line.account.type.revenue:
+                account_type = 'revenue'
+
             records.append({
                     'sequence': sequence,
                     'company': currentKey[0].rec_name,
                     'key': str(currentKey),
                     'account_code': line.account.code or '',
                     'account_name': line.account.name or '',
-                    'account_type': line.account.kind,
+                    'account_type': account_type,
                     'date': line.date.strftime('%d/%m/%Y'),
                     'move_line_name': line.description or '',
                     'ref': (line.origin.rec_name if line.origin and
