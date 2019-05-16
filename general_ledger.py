@@ -10,7 +10,7 @@ from trytond.wizard import Wizard, StateView, StateAction, Button
 from trytond.pyson import Eval
 from trytond.modules.jasper_reports.jasper import JasperReport
 from trytond.i18n import gettext
-from trytond.exceptions import UserWarning
+from trytond.exceptions import UserError
 
 __all__ = ['PrintGeneralLedgerStart',
     'PrintGeneralLedger', 'GeneralLedgerReport']
@@ -114,7 +114,7 @@ class PrintGeneralLedger(Wizard):
         pool = Pool()
         FiscalYear = pool.get('account.fiscalyear')
         Period = pool.get('account.period')
-        Warning = pool.get('res.user.warning')
+
         data = {
             'companies': [{
                     'company': self.start.company.id,
@@ -126,67 +126,73 @@ class PrintGeneralLedger(Wizard):
             'parties': [x.id for x in self.start.parties],
             'output_format': self.start.output_format,
             }
+
         for company in self.start.companies:
-            fiscalyears = FiscalYear.search([
-                    ('company', '=', company.id),
-                    ('code', '=', self.start.fiscalyear.code)
-                    if self.start.fiscalyear.code
-                    else ('name', '=', self.start.fiscalyear.name),
-                    ])
-            key = 'missing_fiscalyear_%s_%s' % (
-                company.id, self.start.fiscalyear.id)
-            if not fiscalyears and Warning.check(key):
-                raise UserWarning(key,
-                    gettext(
-                        'account_jasper_reports_multicompany.missing_fiscalyear_multicompany',
-                        company=company.rec_name,
-                        fiscalyear=(self.start.fiscalyear.code
-                            if self.start.fiscalyear.code
-                            else self.start.fiscalyear.name),
-                    ))
+            if not company.intercompany_user:
                 continue
 
-            start_periods = Period.search([
-                    ('fiscalyear', '=', fiscalyears[0]),
-                    ('code', '=', self.start.start_period.code)
-                    if self.start.start_period.code
-                    else ('name', '=', self.start.start_period.name),
-                    ])
-            key = 'missing_period_%s_%s' % (company.id, fiscalyears[0].id)
-            if not start_periods and Warning.check(key):
-                raise UserWarning(key, gettext(
-                    'account_jasper_reports_multicompany.missing_period_multicompany',
-                        company=company.rec_name,
-                        fiscalyear=fiscalyears[0].rec_name,
-                        period=(self.start.start_period.code
-                            if self.start.start_period.code
-                            else self.start.start_period.name),
-                    ))
-                continue
+            with Transaction().set_user(company.intercompany_user.id), \
+                    Transaction().set_context(company=company.id,
+                    companies=[company.id],
+                    _check_access=False):
 
-            end_periods = Period.search([
-                    ('fiscalyear', '=', fiscalyears[0]),
-                    ('code', '=', self.start.end_period.code)
-                    if self.start.end_period.code
-                    else ('name', '=', self.start.end_period.name),
-                    ])
-            if not end_periods and Warning.check(key):
-                raise UserWarning(key, gettext(
+                fiscalyears = FiscalYear.search([
+                        ('company', '=', company.id),
+                        ('code', '=', self.start.fiscalyear.code)
+                        if self.start.fiscalyear.code
+                        else ('name', '=', self.start.fiscalyear.name),
+                        ], limit=1)
+                if not fiscalyears:
+                    raise UserError(
+                        gettext(
+                            'account_jasper_reports_multicompany.missing_fiscalyear_multicompany',
+                            company=company.rec_name,
+                            fiscalyear=(self.start.fiscalyear.code
+                                if self.start.fiscalyear.code
+                                else self.start.fiscalyear.name),
+                        ))
+
+                fiscalyear, = fiscalyears
+                start_periods = Period.search([
+                        ('fiscalyear', '=', fiscalyear),
+                        ('code', '=', self.start.start_period.code)
+                        if self.start.start_period.code
+                        else ('name', '=', self.start.start_period.name),
+                        ], limit=1)
+                if not start_periods:
+                    raise UserError(gettext(
                         'account_jasper_reports_multicompany.missing_period_multicompany',
-                        company=company.rec_name,
-                        fiscalyear=fiscalyears[0].rec_name,
-                        period=(self.start.end_period.code
-                            if self.start.end_period.code
-                            else self.start.end_period.name),
-                    ))
-                continue
+                            company=company.rec_name,
+                            fiscalyear=fiscalyear.rec_name,
+                            period=(self.start.start_period.code
+                                if self.start.start_period.code
+                                else self.start.start_period.name),
+                        ))
 
-            data['companies'].append({
-                'company': company.id,
-                'fiscalyear': fiscalyears[0].id,
-                'start_period': start_periods[0].id,
-                'end_period': end_periods[0].id,
-                })
+                end_periods = Period.search([
+                        ('fiscalyear', '=', fiscalyear),
+                        ('code', '=', self.start.end_period.code)
+                        if self.start.end_period.code
+                        else ('name', '=', self.start.end_period.name),
+                        ], limit=1)
+                if not end_periods:
+                    raise UserError(gettext(
+                            'account_jasper_reports_multicompany.missing_period_multicompany',
+                            company=company.rec_name,
+                            fiscalyear=fiscalyear.rec_name,
+                            period=(self.start.end_period.code
+                                if self.start.end_period.code
+                                else self.start.end_period.name),
+                        ))
+
+                start_period, = start_periods
+                end_period, = start_periods
+                data['companies'].append({
+                    'company': company.id,
+                    'fiscalyear': fiscalyear.id,
+                    'start_period': start_period.id,
+                    'end_period': end_period.id,
+                    })
         return action, data
 
     def transition_print_(self):
