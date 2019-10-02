@@ -10,6 +10,7 @@ MODULE = 'account_jasper_reports_multicompany'
 PREFIX = 'nantic'
 MODULE2PREFIX = {
     'account_jasper_reports': 'trytonspain',
+    'company_user': 'nantic',
     'jasper_reports': 'trytonspain',
 }
 
